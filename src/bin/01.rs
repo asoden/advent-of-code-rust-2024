@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use fxhash::{FxBuildHasher, FxHashMap};
 
 advent_of_code::solution!(1);
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut left_list = vec![];
-    let mut right_list = vec![];
+    let mut left_list = Vec::with_capacity(1000);
+    let mut right_list = Vec::with_capacity(1000);
 
     input.trim_end().lines().for_each(|line| {
         let mut line = line.split_whitespace();
@@ -35,8 +35,11 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let mut left_list = vec![];
-    let mut right_keys: HashMap<u32, u32> = HashMap::new();
+    let mut left_list = Vec::with_capacity(1000);
+    // let mut right_keys: HashMap<u32, u32> = HashMap::new();
+    // let mut right_keys: HashMap<u32, u32> = HashMap::with_capacity(1000);
+    let mut right_keys: FxHashMap<u32, u32> =
+        FxHashMap::with_capacity_and_hasher(1000, FxBuildHasher::default());
 
     input.trim_end().lines().for_each(|line| {
         let mut line = line.split_whitespace();
@@ -50,7 +53,7 @@ pub fn part_two(input: &str) -> Option<u32> {
 
         let right_num = line
             .next()
-            .expect("Left value of list")
+            .expect("Right value of list")
             .parse::<u32>()
             .expect("Numeric value");
 
@@ -63,7 +66,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     Some(
         left_list
             .iter()
-            .map(|&val| right_keys.get(&val).unwrap_or(&0) * val)
+            .filter_map(|&val| right_keys.get(&val).map(|r| r * val))
             .sum(),
     )
 }
