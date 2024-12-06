@@ -1,6 +1,6 @@
-use std::collections::btree_set::IntoIter;
+use rayon::prelude::*;
 
-use fxhash::FxHashSet;
+use fxhash::{FxBuildHasher, FxHashSet};
 
 advent_of_code::solution!(6);
 
@@ -79,6 +79,7 @@ fn parse(input: &str) -> (Guard, Vec<Vec<Cell>>) {
     (guard, grid)
 }
 
+#[inline]
 fn get_grid_at_pos(guard: &Guard, grid: &[Vec<Cell>]) -> Cell {
     grid[guard.y][guard.x]
 }
@@ -86,7 +87,7 @@ fn get_grid_at_pos(guard: &Guard, grid: &[Vec<Cell>]) -> Cell {
 fn look_ahead(guard: &Guard, grid: &[Vec<Cell>]) -> Option<Cell> {
     if (guard.x == 0 && guard.direction == Direction::Left)
         || (guard.y == 0 && guard.direction == Direction::Up)
-        || (guard.x == grid[0].len() - 1 && guard.direction == Direction::Right)
+        || (guard.x == grid.len() - 1 && guard.direction == Direction::Right)
         || (guard.y == grid.len() - 1 && guard.direction == Direction::Down)
     {
         return None;
@@ -103,17 +104,14 @@ fn detect_cycle(mut guard: Guard, grid: Vec<Vec<Cell>>) -> bool {
 
     while let Some(cell) = look_ahead(&guard, &grid) {
         match cell {
-            Cell::Obstruction => {
-                guard.rotate();
-                guard.advance();
-            }
+            Cell::Obstruction => guard.rotate(),
             Cell::Open => guard.advance(),
         }
         let pos = (guard.x, guard.y, guard.direction);
-        if visited.contains(&pos) {
+
+        if !visited.insert(pos) {
             return true;
         }
-        visited.insert(pos);
     }
 
     false
@@ -144,7 +142,7 @@ pub fn part_two(input: &str) -> Option<usize> {
     let (mut ray, grid) = parse(input);
 
     let initial_ray = ray.clone();
-    let mut visited = FxHashSet::default();
+    let mut visited = FxHashSet::with_capacity_and_hasher(100, FxBuildHasher::default());
 
     visited.insert((ray.x, ray.y));
 
@@ -160,8 +158,11 @@ pub fn part_two(input: &str) -> Option<usize> {
     }
 
     let positions = visited
-        .iter()
+        .par_iter()
         .map(|(x, y)| {
+            if initial_ray.x == *x && initial_ray.y == *y {
+                return false;
+            }
             let mut new_grid = grid.clone();
             new_grid[*y][*x] = Cell::Obstruction;
 
