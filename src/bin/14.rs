@@ -26,16 +26,8 @@ fn move_robot(robot: &mut Point, velocity: &Point) {
     let moved_x = robot.x + velocity.x;
     let moved_y = robot.y + velocity.y;
 
-    let normalized_x = if moved_x < 0 {
-        WIDTH + (moved_x % WIDTH)
-    } else {
-        moved_x % WIDTH
-    };
-    let normalized_y = if moved_y < 0 {
-        HEIGHT + (moved_y % HEIGHT)
-    } else {
-        moved_y % HEIGHT
-    };
+    let normalized_x = moved_x.rem_euclid(WIDTH);
+    let normalized_y = moved_y.rem_euclid(HEIGHT);
 
     robot.x = normalized_x;
     robot.y = normalized_y;
