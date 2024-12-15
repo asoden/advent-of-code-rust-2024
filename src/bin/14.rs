@@ -26,8 +26,16 @@ fn move_robot(robot: &mut Point, velocity: &Point) {
     let moved_x = robot.x + velocity.x;
     let moved_y = robot.y + velocity.y;
 
-    let normalized_x = moved_x.rem_euclid(WIDTH);
-    let normalized_y = moved_y.rem_euclid(HEIGHT);
+    let normalized_x = if moved_x < 0 {
+        WIDTH + (moved_x % WIDTH)
+    } else {
+        moved_x % WIDTH
+    };
+    let normalized_y = if moved_y < 0 {
+        HEIGHT + (moved_y % HEIGHT)
+    } else {
+        moved_y % HEIGHT
+    };
 
     robot.x = normalized_x;
     robot.y = normalized_y;
@@ -82,18 +90,6 @@ fn safety(robots: &[(Point, Point)]) -> u32 {
     upper_left * upper_right * lower_left * lower_right
 }
 
-fn print_grid(robots: &[(Point, Point)]) {
-    let mut grid = vec![['.'; WIDTH as usize]; HEIGHT as usize];
-
-    for (point, _) in robots {
-        grid[point.y as usize][point.x as usize] = '#';
-    }
-
-    for row in grid.iter() {
-        println!("{}", row.iter().collect::<String>());
-    }
-}
-
 pub fn part_one(input: &str) -> Option<u32> {
     let mut robots = parse(input);
 
@@ -107,7 +103,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let step_num = u16::MAX as usize;
+    let step_num = 8159;
     let mut safety_values = vec![(0, 0); step_num];
     let mut robots = parse(input);
 
@@ -116,13 +112,15 @@ pub fn part_two(input: &str) -> Option<usize> {
             .par_iter_mut()
             .for_each(|(robot, velocity)| move_robot(robot, velocity));
         *safety_val = (i, safety(&robots));
-        // print_grid(&robots);
-        // println!("========================================================================")
     }
 
-    Some(8159)
-}
+    let min_safety = safety_values
+        .par_iter()
+        .min_by(|a, b| a.1.cmp(&b.1))
+        .expect("iteration is not empty");
 
+    Some(min_safety.0 + 1)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
