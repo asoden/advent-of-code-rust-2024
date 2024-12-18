@@ -1,6 +1,7 @@
 use std::ops::{Add, AddAssign, Sub};
 
-use pathfinding::prelude::{astar, astar_bag, dijkstra};
+use fxhash::FxHashSet;
+use pathfinding::prelude::{astar, astar_bag};
 
 advent_of_code::solution!(16);
 
@@ -105,21 +106,42 @@ fn successors(reindeer: &Reindeer, grid: &[Vec<u8>]) -> Vec<(Reindeer, u32)> {
         ));
     }
 
-    positions.push((
-        Reindeer {
-            position: reindeer.position,
-            direction: reindeer.direction.rotate_counter_clockwise(),
-        },
-        1000,
-    ));
+    let left = reindeer.direction.rotate_counter_clockwise();
+    let left_move = reindeer.position + left.vector();
+    if get(grid, &left_move) != b'#' {
+        positions.push((
+            Reindeer {
+                position: left_move,
+                direction: left,
+            },
+            1001,
+        ));
+    }
 
-    positions.push((
-        Reindeer {
-            position: reindeer.position,
-            direction: reindeer.direction.rotate_clockwise(),
-        },
-        1000,
-    ));
+    let right = reindeer.direction.rotate_clockwise();
+    let right_move = reindeer.position + right.vector();
+    if get(grid, &right_move) != b'#' {
+        positions.push((
+            Reindeer {
+                position: right_move,
+                direction: right,
+            },
+            1001,
+        ));
+    }
+
+    let behind = reindeer.direction.rotate_clockwise().rotate_clockwise();
+    let backward_move = reindeer.position + behind.vector();
+
+    if get(grid, &backward_move) != b'#' {
+        positions.push((
+            Reindeer {
+                position: backward_move,
+                direction: behind,
+            },
+            2001,
+        ));
+    }
 
     positions
 }
@@ -131,12 +153,12 @@ fn parse(input: &str) -> (Vec<Vec<u8>>, Reindeer, Point) {
         .map(|line| line.as_bytes().to_vec())
         .collect();
     let start = Point {
-        x: (grid.len() - 2) as i32,
-        y: 1,
-    };
-    let end = Point {
         x: 1,
         y: (grid.len() - 2) as i32,
+    };
+    let end = Point {
+        x: (grid.len() - 2) as i32,
+        y: 1,
     };
 
     let reindeer = Reindeer {
@@ -159,13 +181,32 @@ fn find_path(grid: &[Vec<u8>], reindeer: &Reindeer, end: &Point) -> u32 {
     cost
 }
 
+
+fn find_all_path(grid: &[Vec<u8>], reindeer: &Reindeer, end: &Point) -> u32 {
+    let (paths, _) = astar_bag(
+        reindeer,
+        |reindeer| successors(reindeer, grid),
+        |reindeer| taxicab_distance(reindeer.position, *end),
+        |reindeer| reindeer.position == *end,
+    )
+    .unwrap();
+
+    let points: FxHashSet<Point> = paths.fold(FxHashSet::default(), |mut set, reindeer_path| {
+        set.extend(reindeer_path.iter().map(|reindeer| reindeer.position));
+        set
+    });
+
+    points.len() as u32
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let (grid, reindeer, end) = parse(input);
     Some(find_path(&grid, &reindeer, &end))
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let (grid, reindeer, end) = parse(input);
+    Some(find_all_path(&grid, &reindeer, &end))
 }
 
 #[cfg(test)]
@@ -181,6 +222,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(64));
     }
 }
