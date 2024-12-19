@@ -181,7 +181,6 @@ fn find_path(grid: &[Vec<u8>], reindeer: &Reindeer, end: &Point) -> u32 {
     cost
 }
 
-
 fn find_all_path(grid: &[Vec<u8>], reindeer: &Reindeer, end: &Point) -> u32 {
     let (paths, _) = astar_bag(
         reindeer,
