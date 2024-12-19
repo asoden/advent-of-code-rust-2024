@@ -1,8 +1,7 @@
 #![allow(clippy::upper_case_acronyms)]
-use indicatif::ProgressIterator;
+use fxhash::FxHashSet;
 use itertools::Itertools;
 
-use std::thread;
 advent_of_code::solution!(17);
 
 enum OperandType {
@@ -126,6 +125,31 @@ impl Computer {
             Opcode::CDV => self.c = self.a / 2usize.pow(operand as u32),
         }
     }
+
+    fn find_quine(&mut self) -> usize {
+        let mut quines = FxHashSet::default();
+        quines.insert(0);
+
+        for num in self.program.iter().rev() {
+            let mut new_quines = FxHashSet::default();
+            for current in quines {
+                for i in 0..8 {
+                    let new = (current << 3) + i;
+                    if Self::output(new) == *num {
+                        new_quines.insert(new);
+                    }
+                }
+            }
+            quines = new_quines;
+        }
+
+        *quines.iter().min().unwrap_or(&0)
+    }
+
+    fn output(a: usize) -> usize {
+        let partial = (a % 8) ^ 1;
+        ((partial ^ (a >> partial)) ^ 4) % 8
+    }
 }
 
 pub fn part_one(input: &str) -> Option<String> {
@@ -139,22 +163,7 @@ pub fn part_one(input: &str) -> Option<String> {
 pub fn part_two(input: &str) -> Option<usize> {
     let mut computer = Computer::new(input);
 
-    for i in (0..i64::MAX as usize / thread::available_parallelism().unwrap()).progress() {
-        computer.a = i;
-
-        while !computer.stopped {
-            computer.step();
-        }
-
-        if computer.output == computer.program {
-            break;
-        }
-
-        computer.counter = 0;
-        computer.stopped = false;
-        computer.output.truncate(0);
-    }
-    Some(computer.a)
+    Some(computer.find_quine())
 }
 
 #[cfg(test)]
@@ -164,12 +173,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, Some("4,6,3,5,6,3,5,2,1,0".to_string()));
+        assert_eq!(result, Some("5,7,3,0".to_string()));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(0));
     }
 }
