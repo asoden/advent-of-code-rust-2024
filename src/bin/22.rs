@@ -10,7 +10,7 @@ fn mix(value: i64, seed: i64) -> i64 {
 
 #[inline]
 fn prune(seed: i64) -> i64 {
-    seed % 16777216
+    seed & 0xFFFFFF
 }
 
 fn generate_secret(seed: i64) -> i64 {
@@ -47,7 +47,7 @@ pub fn part_one(input: &str) -> Option<i64> {
     )
 }
 
-pub fn part_two(input: &str) -> Option<i64> {
+pub fn part_two(input: &str) -> Option<i16> {
     let secret_bids = parse(input);
 
     secret_bids
@@ -55,10 +55,10 @@ pub fn part_two(input: &str) -> Option<i64> {
         .map(|&secret_bid| {
             let mut bids = Vec::with_capacity(2001);
             let mut bid = secret_bid;
-            bids.push(bid % 10);
+            bids.push((bid % 10) as i16);
             for _ in 0..2000 {
                 bid = generate_secret(bid);
-                bids.push(bid % 10);
+                bids.push((bid % 10) as i16);
             }
 
             let mut mapping = FxHashMap::default();
