@@ -80,11 +80,7 @@ fn parse(input: &str) -> (Vec<Vec<Cell>>, Point, Point) {
         grid.push(row);
     });
 
-    (
-        grid,
-        start,
-        end,
-    )
+    (grid, start, end)
 }
 
 fn get_distances(start: &Point, end: &Point, grid: &[Vec<Cell>]) -> FxHashMap<Point, u32> {
@@ -99,7 +95,7 @@ fn get_distances(start: &Point, end: &Point, grid: &[Vec<Cell>]) -> FxHashMap<Po
 
         distances.insert(point, distance);
 
-        if point == * end {
+        if point == *end {
             continue;
         }
 
@@ -112,7 +108,6 @@ fn get_distances(start: &Point, end: &Point, grid: &[Vec<Cell>]) -> FxHashMap<Po
 
     distances
 }
-
 
 fn cheating_savings(start: &Point, end: &Point, grid: &[Vec<Cell>], cheat_distance: u32) -> u32 {
     let distances = get_distances(start, end, grid);
