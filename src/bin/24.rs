@@ -67,7 +67,7 @@ impl BitXor for State {
 
 #[derive(Debug)]
 struct Wire {
-    value: Option<State>
+    value: Option<State>,
 }
 
 impl Wire {
