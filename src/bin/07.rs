@@ -23,7 +23,7 @@ fn check(current: u64, values: &[u64], should_concat: bool) -> bool {
     if let Some((value, values)) = values.split_last() {
         if should_concat {
             let num_digits = 10u64.pow(value.checked_ilog10().unwrap_or(0) + 1);
-            if (current - value) % num_digits == 0
+            if (current.wrapping_sub(*value)) % num_digits == 0
                 && check(current / num_digits, values, should_concat)
             {
                 return true;
