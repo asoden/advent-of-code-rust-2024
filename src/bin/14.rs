@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use rayon::prelude::*;
 
 advent_of_code::solution!(14);
@@ -16,7 +18,7 @@ const STEPS: i32 = 100;
 #[cfg(not(test))]
 const STEPS: i32 = 100;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
     x: i32,
     y: i32,
@@ -82,6 +84,38 @@ fn safety(robots: &[(Point, Point)]) -> u32 {
     upper_left * upper_right * lower_left * lower_right
 }
 
+// bin the grid into arbitraily sized grids
+fn shannon_entropy(robots: &[(Point, Point)]) -> f64 {
+    let mut bins = [0.0; 4];
+    let mut num_bots = 0.0;
+
+    for (robot, _) in robots {
+        if robot.x < WIDTH / 2 && robot.y < HEIGHT / 2 {
+            bins[0] += 1.0;
+            num_bots += 1.0;
+        }
+        if robot.x > WIDTH / 2 && robot.y < HEIGHT / 2 {
+            bins[1] += 1.0;
+            num_bots += 1.0;
+        }
+        if robot.x < WIDTH / 2 && robot.y > HEIGHT / 2 {
+            bins[2] += 1.0;
+            num_bots += 1.0;
+        }
+        if robot.x > WIDTH / 2 && robot.y > HEIGHT / 2 {
+            bins[3] += 1.0;
+            num_bots += 1.0;
+        }
+    }
+
+    bins.iter()
+        .map(|x| {
+            let p = x / num_bots;
+            -p * (p + f64::EPSILON).log2()
+        })
+        .sum()
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let mut robots = parse(input);
 
@@ -95,21 +129,29 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let step_num = 8159;
-    let mut safety_values = vec![(0, 0); step_num];
+    let step_num = 8200;
+    let mut safety_values: Vec<(usize, u32, f64)> = vec![(0, 0, 0.0); step_num];
     let mut robots = parse(input);
 
     for (i, safety_val) in safety_values.iter_mut().enumerate().take(step_num) {
         robots
             .par_iter_mut()
             .for_each(|(robot, velocity)| move_robot(robot, velocity));
-        *safety_val = (i, safety(&robots));
+        *safety_val = (i, safety(&robots), shannon_entropy(&robots));
     }
 
     let min_safety = safety_values
         .par_iter()
-        .min_by(|a, b| a.1.cmp(&b.1))
+        .min_by(|a, b| a.2.partial_cmp(&b.2).unwrap())
         .expect("iteration is not empty");
+
+    let max_safety = safety_values
+        .par_iter()
+        .max_by(|a, b| a.2.partial_cmp(&b.2).unwrap())
+        .expect("iteration is not empty");
+
+    dbg!(min_safety);
+    dbg!(max_safety);
 
     Some(min_safety.0 + 1)
 }
